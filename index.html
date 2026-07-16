@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexoCRM - Gestión de Clientes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1B2420;
+            --paper: #EEF1EE;
+            --surface: #FFFFFF;
+            --pine: #16332C;
+            --pine-light: #1F4A3E;
+            --brass: #C0872E;
+            --brass-light: #E0A94F;
+            --border-soft: #DDE3DD;
+            --estado-ganado: #1F7A5C;
+            --estado-ganado-bg: #E4F3EC;
+            --estado-proceso: #2F6C8F;
+            --estado-proceso-bg: #E5F0F6;
+            --estado-no: #B14640;
+            --estado-no-bg: #FBEAE9;
+            --estado-sin: #7B837D;
+            --estado-sin-bg: #EEF0EE;
+        }
+
+        body {
+            background-color: var(--paper);
+            color: var(--ink);
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1, h2, h3, h4, .font-display {
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: -0.01em;
+        }
+
+        .font-mono-data {
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .nav-nexo {
+            background: var(--pine);
+            border-bottom: 3px solid var(--brass);
+        }
+
+        .badge-lang {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+
+        .btn-brass {
+            background: var(--brass);
+            color: #21170A;
+            font-weight: 600;
+            transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.12);
+        }
+        .btn-brass:hover {
+            background: var(--brass-light);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(192,135,46,0.35);
+        }
+        .btn-brass:active { transform: translateY(0); }
+
+        .surface-card {
+            background: var(--surface);
+            border: 1px solid var(--border-soft);
+            border-radius: 14px;
+        }
+
+        .input-nexo {
+            border: 1px solid var(--border-soft);
+            background: var(--surface);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .input-nexo:focus {
+            outline: none;
+            border-color: var(--pine-light);
+            box-shadow: 0 0 0 3px rgba(31,74,62,0.14);
+        }
+
+        .fila-cliente {
+            border-left: 4px solid transparent;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .fila-cliente:hover {
+            background: #F6F8F6;
+        }
+        .fila-cliente.tab-ganado { border-left-color: var(--estado-ganado); }
+        .fila-cliente.tab-proceso { border-left-color: var(--estado-proceso); }
+        .fila-cliente.tab-no { border-left-color: var(--estado-no); }
+        .fila-cliente.tab-sin { border-left-color: var(--estado-sin); }
+
+        .badge-estado {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+        .badge-estado .punto {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+        }
+        .badge-ganado { background: var(--estado-ganado-bg); color: var(--estado-ganado); }
+        .badge-ganado .punto { background: var(--estado-ganado); }
+        .badge-proceso { background: var(--estado-proceso-bg); color: var(--estado-proceso); }
+        .badge-proceso .punto { background: var(--estado-proceso); }
+        .badge-no { background: var(--estado-no-bg); color: var(--estado-no); }
+        .badge-no .punto { background: var(--estado-no); }
+        .badge-sin { background: var(--estado-sin-bg); color: var(--estado-sin); }
+        .badge-sin .punto { background: var(--estado-sin); }
+
+        .selector-estado {
+            appearance: none;
+            -webkit-appearance: none;
+            border: none;
+            border-radius: 999px;
+            padding: 4px 26px 4px 12px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 10px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E");
+            transition: filter 0.15s ease;
+        }
+        .selector-estado:hover { filter: brightness(0.96); }
+        .selector-estado:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.15);
+        }
+
+        .tarjeta-cliente {
+            border-left: 4px solid transparent;
+        }
+        .tarjeta-cliente.tab-ganado { border-left-color: var(--estado-ganado); }
+        .tarjeta-cliente.tab-proceso { border-left-color: var(--estado-proceso); }
+        .tarjeta-cliente.tab-no { border-left-color: var(--estado-no); }
+        .tarjeta-cliente.tab-sin { border-left-color: var(--estado-sin); }
+
+        thead.encabezado-nexo th {
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--pine);
+            border-bottom: 2px solid var(--border-soft);
+        }
+
+        .accion-pill {
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+        .accion-pill:hover { transform: translateY(-1px); }
+
+        .modal-backdrop {
+            background: rgba(19, 28, 24, 0.55);
+            backdrop-filter: blur(2px);
+        }
+
+        ::selection {
+            background: var(--brass-light);
+            color: #21170A;
+        }
+    </style>
+</head>
+<body class="font-sans">
+
+    <nav class="nav-nexo text-white px-4 py-4 md:px-6">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-display font-semibold tracking-wide flex items-center gap-2">
+                <span class="text-2xl leading-none">📇</span> NexoCRM
+            </h1>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-6">
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div>
+                <h2 class="text-2xl font-display font-semibold" style="color: var(--pine);">Mis Clientes</h2>
+                <p class="text-sm" style="color: #5B655F;">Gestión de contactos y seguimiento de ventas.</p>
+            </div>
+            <button onclick="abrirModal()" class="btn-brass w-full md:w-auto py-2.5 px-5 rounded-lg">
+                + Nuevo Cliente
+            </button>
+        </div>
+
+        <!-- Barra de búsqueda y filtros -->
+        <div class="surface-card p-4 mb-4 flex flex-col md:flex-row gap-3 md:items-center">
+            <div class="relative flex-1">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm opacity-60">🔎</span>
+                <input
+                    type="text"
+                    id="buscador"
+                    oninput="renderizarClientes()"
+                    placeholder="Buscar por nombre, empresa o contacto..."
+                    class="input-nexo w-full rounded-lg pl-9 pr-3 py-2 text-sm"
+                >
+            </div>
+            <select id="filtro_estado" onchange="renderizarClientes()" class="input-nexo w-full md:w-52 rounded-lg p-2 text-sm">
+                <option value="">Todos los estados</option>
+                <option value="Ganado">Ganado</option>
+                <option value="En proceso">En proceso</option>
+                <option value="No interesado">No interesado</option>
+                <option value="Sin contacto">Sin contacto</option>
+            </select>
+            <span id="contador-resultados" class="text-xs font-mono-data whitespace-nowrap md:pl-2" style="color: var(--pine);"></span>
+        </div>
+
+        <div class="hidden md:block surface-card overflow-hidden">
+            <table class="min-w-full divide-y" style="border-color: var(--border-soft);">
+                <thead class="encabezado-nexo">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs uppercase tracking-wider">Cliente / Empresa</th>
+                        <th class="px-6 py-3 text-left text-xs uppercase tracking-wider">Contacto Principal</th>
+                        <th class="px-6 py-3 text-left text-xs uppercase tracking-wider">Contacto Directo</th>
+                        <th class="px-6 py-3 text-left text-xs uppercase tracking-wider">Sector</th>
+                        <th class="px-6 py-3 text-left text-xs uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-3 text-left text-xs uppercase tracking-wider"></th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-clientes" class="divide-y" style="border-color: var(--border-soft);">
+                    </tbody>
+            </table>
+            <div id="tabla-vacia" class="hidden text-center py-12 px-6">
+                <p class="text-3xl mb-3">🗂️</p>
+                <p class="font-display font-semibold" style="color: var(--pine);">No hay clientes que coincidan</p>
+                <p class="text-sm mt-1" style="color: #5B655F;">Prueba con otro término de búsqueda o cambia el filtro de estado.</p>
+            </div>
+        </div>
+
+        <div id="tarjetas-clientes" class="grid grid-cols-1 gap-4 md:hidden">
+            </div>
+        <div id="tarjetas-vacio" class="hidden md:hidden text-center py-12 px-6 surface-card">
+            <p class="text-3xl mb-3">🗂️</p>
+            <p class="font-display font-semibold" style="color: var(--pine);">No hay clientes que coincidan</p>
+            <p class="text-sm mt-1" style="color: #5B655F;">Prueba con otro término de búsqueda o cambia el filtro de estado.</p>
+        </div>
+    </main>
+
+    <div id="modal-cliente" class="hidden fixed inset-0 modal-backdrop flex items-end md:items-center justify-center z-50">
+        <div class="surface-card shadow-xl w-full md:max-w-lg max-h-[92vh] md:max-h-[90vh] overflow-y-auto p-5 md:p-6 rounded-t-2xl md:rounded-2xl">
+            <div class="flex justify-center md:hidden mb-3 -mt-1">
+                <span class="block w-10 h-1.5 rounded-full" style="background: var(--border-soft);"></span>
+            </div>
+            <div class="flex justify-between items-center mb-4 pb-3" style="border-bottom: 2px solid var(--border-soft);">
+                <h3 class="text-lg md:text-xl font-display font-semibold" style="color: var(--pine);">Agregar Nuevo Cliente</h3>
+                <button onclick="cerrarModal()" class="text-2xl leading-none opacity-50 hover:opacity-100 transition p-1" aria-label="Cerrar">&times;</button>
+            </div>
+
+            <form id="form-nuevo-cliente" onsubmit="guardarCliente(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1" style="color: var(--ink);">Tipo de Cliente *</label>
+                    <select id="tipo_cliente" onchange="toggleCamposEmpresa()" class="input-nexo w-full rounded-lg p-2" required>
+                        <option value="Particular">Particular / Persona Individual</option>
+                        <option value="Empresa">Empresa / Negocio</option>
+                    </select>
+                </div>
+
+                <div id="grupo-empresa" class="hidden">
+                    <label class="block text-sm font-semibold mb-1" style="color: var(--ink);">Nombre de la Empresa</label>
+                    <input type="text" id="nombre_comercial" class="input-nexo w-full rounded-lg p-2" placeholder="Ej. Restaurante Manolo">
+
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1" style="color: #5B655F;">Sector</label>
+                            <input type="text" id="sector" class="input-nexo w-full rounded-lg p-2 text-sm" placeholder="Ej. Hostelería">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1" style="color: #5B655F;">Sitio Web</label>
+                            <input type="text" id="sitio_web" class="input-nexo w-full rounded-lg p-2 text-sm" placeholder="Ej. www.web.com">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-3" style="border-top: 1px solid var(--border-soft);">
+                    <h4 class="text-sm font-display font-semibold mb-2" style="color: var(--pine);">Persona de Contacto</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1" style="color: #5B655F;">Nombre Completo *</label>
+                            <input type="text" id="nombre_contacto" class="input-nexo w-full rounded-lg p-2 text-sm" placeholder="Ej. Carlos Ruiz" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1" style="color: #5B655F;">Puesto / Cargo</label>
+                            <input type="text" id="puesto" class="input-nexo w-full rounded-lg p-2 text-sm" placeholder="Ej. Propietario">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1" style="color: #5B655F;">Teléfono</label>
+                        <input type="tel" id="telefono" class="input-nexo w-full rounded-lg p-2 text-sm" placeholder="Ej. +34 600 000 000">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1" style="color: #5B655F;">Email</label>
+                        <input type="email" id="email" class="input-nexo w-full rounded-lg p-2 text-sm" placeholder="Ej. carlos@correo.com">
+                    </div>
+                </div>
+
+                <div class="flex flex-col-reverse md:flex-row gap-2 md:justify-end pt-4" style="border-top: 1px solid var(--border-soft);">
+                    <button type="button" onclick="cerrarModal()" class="w-full md:w-auto px-4 py-2.5 md:py-2 rounded-lg transition" style="border: 1px solid var(--border-soft); color: #5B655F;">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-brass w-full md:w-auto px-4 py-2.5 md:py-2 rounded-lg">
+                        Guardar Cliente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ------------------------------------------------------------------
+        // NOTA: Esta versión funciona 100% en el navegador, sin servidor.
+        // Los datos se guardan en localStorage, así que persisten entre
+        // visitas en el mismo navegador/dispositivo, pero no se sincronizan
+        // entre dispositivos distintos.
+        // ------------------------------------------------------------------
+
+        const CLAVE_ALMACENAMIENTO = 'nexocrm_clientes';
+
+        // Cache local de clientes para poder filtrar sin volver a leer el almacenamiento
+        let clientesCache = [];
+
+        function generarId() {
+            return 'c_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+        }
+
+        function leerClientesDeAlmacenamiento() {
+            try {
+                const datos = localStorage.getItem(CLAVE_ALMACENAMIENTO);
+                return datos ? JSON.parse(datos) : [];
+            } catch (error) {
+                console.error("Error leyendo clientes de localStorage:", error);
+                return [];
+            }
+        }
+
+        function guardarClientesEnAlmacenamiento(clientes) {
+            try {
+                localStorage.setItem(CLAVE_ALMACENAMIENTO, JSON.stringify(clientes));
+                return true;
+            } catch (error) {
+                console.error("Error guardando clientes en localStorage:", error);
+                return false;
+            }
+        }
+
+        // Funciones del Modal
+        function abrirModal() {
+            document.getElementById('modal-cliente').classList.remove('hidden');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-cliente').classList.add('hidden');
+            document.getElementById('form-nuevo-cliente').reset();
+            toggleCamposEmpresa(); // Resetea la visibilidad de los campos de empresa
+        }
+
+        // Muestra/oculta los campos de empresa dependiendo del tipo de cliente
+        function toggleCamposEmpresa() {
+            const tipo = document.getElementById('tipo_cliente').value;
+            const grupoEmpresa = document.getElementById('grupo-empresa');
+            if (tipo === 'Empresa') {
+                grupoEmpresa.classList.remove('hidden');
+            } else {
+                grupoEmpresa.classList.add('hidden');
+            }
+        }
+
+        function obtenerClaveEstado(estado) {
+            const claves = {
+                'Ganado': 'ganado',
+                'En proceso': 'proceso',
+                'No interesado': 'no'
+            };
+            return claves[estado] || 'sin';
+        }
+
+        // Selector editable de estado: mismo aspecto que el badge, pero permite cambiarlo con un clic
+        const ESTADOS_DISPONIBLES = ['Sin contacto', 'En proceso', 'Ganado', 'No interesado'];
+
+        function crearSelectorEstado(cliente) {
+            const estadoActual = cliente.ultimo_estado || 'Sin contacto';
+            const clave = obtenerClaveEstado(cliente.ultimo_estado);
+            const opcionesHtml = ESTADOS_DISPONIBLES.map(op =>
+                `<option value="${op}" ${op === estadoActual ? 'selected' : ''}>${op}</option>`
+            ).join('');
+
+            return `
+                <select
+                    class="selector-estado badge-${clave}"
+                    onchange="actualizarEstadoCliente('${cliente.id}', this.value)"
+                    aria-label="Cambiar estado del cliente"
+                >
+                    ${opcionesHtml}
+                </select>
+            `;
+        }
+
+        // Actualiza el estado de un cliente en localStorage y refleja el cambio al instante
+        function actualizarEstadoCliente(id, nuevoEstado) {
+            const cliente = clientesCache.find(c => String(c.id) === String(id));
+            if (!cliente) return;
+
+            const estadoAnterior = cliente.ultimo_estado;
+            cliente.ultimo_estado = nuevoEstado;
+            renderizarClientes();
+
+            const exito = guardarClientesEnAlmacenamiento(clientesCache);
+            if (!exito) {
+                cliente.ultimo_estado = estadoAnterior;
+                renderizarClientes();
+                alert("No se pudo actualizar el estado. Comprueba el espacio de almacenamiento del navegador.");
+            }
+        }
+
+        // Elimina un cliente de la lista
+        function eliminarCliente(id) {
+            const cliente = clientesCache.find(c => String(c.id) === String(id));
+            if (!cliente) return;
+
+            const nombre = cliente.tipo_cliente === 'Empresa' ? cliente.nombre_comercial : cliente.nombre_contacto;
+            if (!confirm(`¿Eliminar a "${nombre}"? Esta acción no se puede deshacer.`)) return;
+
+            clientesCache = clientesCache.filter(c => String(c.id) !== String(id));
+            guardarClientesEnAlmacenamiento(clientesCache);
+            renderizarClientes();
+        }
+
+        // Cargar clientes desde localStorage
+        function cargarClientes() {
+            clientesCache = leerClientesDeAlmacenamiento();
+            renderizarClientes();
+        }
+
+        // Aplica el texto de búsqueda y el filtro de estado sobre la caché en memoria
+        function filtrarClientes() {
+            const texto = document.getElementById('buscador').value.trim().toLowerCase();
+            const estadoSeleccionado = document.getElementById('filtro_estado').value;
+
+            return clientesCache.filter(cl => {
+                const coincideEstado = !estadoSeleccionado
+                    || (cl.ultimo_estado || 'Sin contacto') === estadoSeleccionado;
+
+                if (!coincideEstado) return false;
+                if (!texto) return true;
+
+                const camposBuscables = [
+                    cl.nombre_comercial,
+                    cl.contacto_principal,
+                    cl.nombre_contacto,
+                    cl.sector,
+                    cl.email,
+                    cl.telefono
+                ].filter(Boolean).join(' ').toLowerCase();
+
+                return camposBuscables.includes(texto);
+            });
+        }
+
+        // Pinta la tabla (escritorio) y las tarjetas (móvil) según el filtro actual
+        function renderizarClientes() {
+            const clientesFiltrados = filtrarClientes();
+
+            const tabla = document.getElementById('tabla-clientes');
+            const contenedorTarjetas = document.getElementById('tarjetas-clientes');
+            const tablaVacia = document.getElementById('tabla-vacia');
+            const tarjetasVacio = document.getElementById('tarjetas-vacio');
+            const contador = document.getElementById('contador-resultados');
+
+            tabla.innerHTML = '';
+            contenedorTarjetas.innerHTML = '';
+
+            const total = clientesCache.length;
+            const mostrados = clientesFiltrados.length;
+            contador.textContent = mostrados === total
+                ? `${total} cliente${total === 1 ? '' : 's'}`
+                : `${mostrados} de ${total} clientes`;
+
+            const hayResultados = clientesFiltrados.length > 0;
+            tablaVacia.classList.toggle('hidden', hayResultados);
+            tarjetasVacio.classList.toggle('hidden', hayResultados);
+
+            clientesFiltrados.forEach(cl => {
+                const nombreMostrar = cl.tipo_cliente === 'Empresa' ? cl.nombre_comercial : cl.nombre_contacto;
+                const contactoSecundario = cl.tipo_cliente === 'Empresa' ? cl.nombre_contacto : 'Particular';
+                const claveEstado = obtenerClaveEstado(cl.ultimo_estado);
+
+                tabla.innerHTML += `
+                    <tr class="fila-cliente tab-${claveEstado}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-semibold" style="color: var(--ink);">${nombreMostrar || '-'}</div>
+                            <div class="text-xs opacity-60">${cl.tipo_cliente}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: var(--ink);">
+                            ${contactoSecundario || '-'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono-data opacity-80">
+                            <div class="flex flex-col">
+                                <a href="tel:${cl.telefono}" class="hover:underline" style="color: var(--pine-light);">📞 ${cl.telefono || '-'}</a>
+                                <span class="text-xs">${cl.email || '-'}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm opacity-80">
+                            ${cl.sector || '-'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            ${crearSelectorEstado(cl)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <button onclick="eliminarCliente('${cl.id}')" class="text-xs opacity-50 hover:opacity-100 hover:text-red-600 transition" title="Eliminar cliente">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+
+                contenedorTarjetas.innerHTML += `
+                    <div class="tarjeta-cliente tab-${claveEstado} surface-card p-5 flex flex-col gap-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-display font-semibold text-lg" style="color: var(--ink);">${nombreMostrar || '-'}</h3>
+                                <span class="text-xs opacity-60 uppercase tracking-wider">${cl.tipo_cliente}</span>
+                            </div>
+                            ${crearSelectorEstado(cl)}
+                        </div>
+                        <div class="text-sm pt-2 mt-1" style="color: var(--ink); border-top: 1px solid var(--border-soft);">
+                            <p class="mb-1 opacity-80"><strong style="color: var(--pine);">Contacto:</strong> ${contactoSecundario}</p>
+                            <p class="mb-1 opacity-80"><strong style="color: var(--pine);">Sector:</strong> ${cl.sector || 'No especificado'}</p>
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <a href="tel:${cl.telefono}" class="accion-pill flex-1 text-center font-semibold py-2 px-3 rounded-lg text-sm" style="background: var(--estado-proceso-bg); color: var(--estado-proceso);">
+                                📞 Llamar
+                            </a>
+                            <a href="mailto:${cl.email}" class="accion-pill flex-1 text-center font-semibold py-2 px-3 rounded-lg text-sm" style="background: #F1F3F1; color: var(--ink);">
+                                ✉️ Email
+                            </a>
+                            <button onclick="eliminarCliente('${cl.id}')" class="accion-pill font-semibold py-2 px-3 rounded-lg text-sm" style="background: var(--estado-no-bg); color: var(--estado-no);" title="Eliminar cliente">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // GUARDAR CLIENTE EN LOCALSTORAGE
+        function guardarCliente(event) {
+            event.preventDefault(); // Evita que la página se recargue
+
+            const nuevoCliente = {
+                id: generarId(),
+                tipo_cliente: document.getElementById('tipo_cliente').value,
+                nombre_comercial: document.getElementById('nombre_comercial').value,
+                sector: document.getElementById('sector').value,
+                sitio_web: document.getElementById('sitio_web').value,
+                nombre_contacto: document.getElementById('nombre_contacto').value,
+                puesto: document.getElementById('puesto').value,
+                telefono: document.getElementById('telefono').value,
+                email: document.getElementById('email').value,
+                ultimo_estado: 'Sin contacto'
+            };
+
+            clientesCache.push(nuevoCliente);
+            const exito = guardarClientesEnAlmacenamiento(clientesCache);
+
+            if (exito) {
+                cerrarModal();
+                renderizarClientes();
+            } else {
+                clientesCache.pop();
+                alert("Error al guardar el cliente. Comprueba el espacio de almacenamiento del navegador.");
+            }
+        }
+
+        // Carga inicial
+        cargarClientes();
+    </script>
+</body>
+</html>
