@@ -265,12 +265,14 @@
                 <span class="block w-10 h-1.5 rounded-full" style="background: var(--border-soft);"></span>
             </div>
             <div class="flex justify-between items-center mb-4 pb-3" style="border-bottom: 2px solid var(--border-soft);">
-                <h3 class="text-lg md:text-xl font-display font-semibold" style="color: var(--pine);">Agregar Nuevo Cliente</h3>
+                <h3 id="modal-titulo" class="text-lg md:text-xl font-display font-semibold" style="color: var(--pine);">Agregar Nuevo Cliente</h3>
                 <button onclick="cerrarModal()" class="text-2xl leading-none opacity-50 hover:opacity-100 transition p-1" aria-label="Cerrar">&times;</button>
             </div>
 
             <form id="form-nuevo-cliente" onsubmit="guardarCliente(event)" class="space-y-4">
+                <input type="hidden" id="cliente_id_editando" value="">
                 <div>
+
                     <label class="block text-sm font-semibold mb-1" style="color: var(--ink);">Tipo de Cliente *</label>
                     <select id="tipo_cliente" onchange="toggleCamposEmpresa()" class="input-nexo w-full rounded-lg p-2" required>
                         <option value="Particular">Particular / Persona Individual</option>
@@ -324,7 +326,7 @@
                         Cancelar
                     </button>
                     <button type="submit" class="btn-brass w-full md:w-auto px-4 py-2.5 md:py-2 rounded-lg">
-                        Guardar Cliente
+                        <span id="texto-boton-guardar">Guardar Cliente</span>
                     </button>
                 </div>
             </form>
@@ -369,13 +371,49 @@
         }
 
         // Funciones del Modal
-        function abrirModal() {
-            document.getElementById('modal-cliente').classList.remove('hidden');
+        // Si se pasa un id, abre el modal en modo edición y precarga los datos del cliente
+        function abrirModal(idCliente = null) {
+            const modal = document.getElementById('modal-cliente');
+            const titulo = document.getElementById('modal-titulo');
+            const textoBoton = document.getElementById('texto-boton-guardar');
+
+            if (idCliente) {
+                const cliente = clientesCache.find(c => String(c.id) === String(idCliente));
+                if (!cliente) return;
+
+                document.getElementById('cliente_id_editando').value = cliente.id;
+                document.getElementById('tipo_cliente').value = cliente.tipo_cliente || 'Particular';
+                document.getElementById('nombre_comercial').value = cliente.nombre_comercial || '';
+                document.getElementById('ciudad').value = cliente.ciudad || '';
+                document.getElementById('sitio_web').value = cliente.sitio_web || '';
+                document.getElementById('nombre_contacto').value = cliente.nombre_contacto || '';
+                document.getElementById('puesto').value = cliente.puesto || '';
+                document.getElementById('telefono').value = cliente.telefono || '';
+                document.getElementById('email').value = cliente.email || '';
+
+                toggleCamposEmpresa();
+                titulo.textContent = 'Editar Cliente';
+                textoBoton.textContent = 'Guardar Cambios';
+            } else {
+                document.getElementById('cliente_id_editando').value = '';
+                titulo.textContent = 'Agregar Nuevo Cliente';
+                textoBoton.textContent = 'Guardar Cliente';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        // Atajo para abrir el modal en modo edición desde la tabla o las tarjetas
+        function editarCliente(id) {
+            abrirModal(id);
         }
 
         function cerrarModal() {
             document.getElementById('modal-cliente').classList.add('hidden');
             document.getElementById('form-nuevo-cliente').reset();
+            document.getElementById('cliente_id_editando').value = '';
+            document.getElementById('modal-titulo').textContent = 'Agregar Nuevo Cliente';
+            document.getElementById('texto-boton-guardar').textContent = 'Guardar Cliente';
             toggleCamposEmpresa(); // Resetea la visibilidad de los campos de empresa
         }
 
@@ -531,6 +569,7 @@
                             ${crearSelectorEstado(cl)}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <button onclick="editarCliente('${cl.id}')" class="text-xs opacity-50 hover:opacity-100 transition mr-3" title="Editar cliente">✏️</button>
                             <button onclick="eliminarCliente('${cl.id}')" class="text-xs opacity-50 hover:opacity-100 hover:text-red-600 transition" title="Eliminar cliente">🗑️</button>
                         </td>
                     </tr>
@@ -556,6 +595,9 @@
                             <a href="mailto:${cl.email}" class="accion-pill flex-1 text-center font-semibold py-2 px-3 rounded-lg text-sm" style="background: #F1F3F1; color: var(--ink);">
                                 ✉️ Email
                             </a>
+                            <button onclick="editarCliente('${cl.id}')" class="accion-pill font-semibold py-2 px-3 rounded-lg text-sm" style="background: #F1F3F1; color: var(--ink);" title="Editar cliente">
+                                ✏️
+                            </button>
                             <button onclick="eliminarCliente('${cl.id}')" class="accion-pill font-semibold py-2 px-3 rounded-lg text-sm" style="background: var(--estado-no-bg); color: var(--estado-no);" title="Eliminar cliente">
                                 🗑️
                             </button>
@@ -565,12 +607,13 @@
             });
         }
 
-        // GUARDAR CLIENTE EN LOCALSTORAGE
+        // GUARDAR CLIENTE EN LOCALSTORAGE (crea uno nuevo o actualiza uno existente)
         function guardarCliente(event) {
             event.preventDefault(); // Evita que la página se recargue
 
-            const nuevoCliente = {
-                id: generarId(),
+            const idEditando = document.getElementById('cliente_id_editando').value;
+
+            const datosFormulario = {
                 tipo_cliente: document.getElementById('tipo_cliente').value,
                 nombre_comercial: document.getElementById('nombre_comercial').value,
                 ciudad: document.getElementById('ciudad').value,
@@ -578,19 +621,47 @@
                 nombre_contacto: document.getElementById('nombre_contacto').value,
                 puesto: document.getElementById('puesto').value,
                 telefono: document.getElementById('telefono').value,
-                email: document.getElementById('email').value,
-                ultimo_estado: 'Sin contacto'
+                email: document.getElementById('email').value
             };
 
-            clientesCache.push(nuevoCliente);
-            const exito = guardarClientesEnAlmacenamiento(clientesCache);
+            if (idEditando) {
+                // Modo edición: actualiza el cliente existente conservando su id y estado
+                const indice = clientesCache.findIndex(c => String(c.id) === String(idEditando));
+                if (indice === -1) {
+                    alert("No se encontró el cliente a editar.");
+                    return;
+                }
 
-            if (exito) {
-                cerrarModal();
-                renderizarClientes();
+                const clienteOriginal = clientesCache[indice];
+                const clienteActualizado = { ...clienteOriginal, ...datosFormulario };
+                clientesCache[indice] = clienteActualizado;
+
+                const exito = guardarClientesEnAlmacenamiento(clientesCache);
+                if (exito) {
+                    cerrarModal();
+                    renderizarClientes();
+                } else {
+                    clientesCache[indice] = clienteOriginal;
+                    alert("Error al guardar los cambios. Comprueba el espacio de almacenamiento del navegador.");
+                }
             } else {
-                clientesCache.pop();
-                alert("Error al guardar el cliente. Comprueba el espacio de almacenamiento del navegador.");
+                // Modo creación: añade un cliente nuevo
+                const nuevoCliente = {
+                    id: generarId(),
+                    ...datosFormulario,
+                    ultimo_estado: 'Sin contacto'
+                };
+
+                clientesCache.push(nuevoCliente);
+                const exito = guardarClientesEnAlmacenamiento(clientesCache);
+
+                if (exito) {
+                    cerrarModal();
+                    renderizarClientes();
+                } else {
+                    clientesCache.pop();
+                    alert("Error al guardar el cliente. Comprueba el espacio de almacenamiento del navegador.");
+                }
             }
         }
 
